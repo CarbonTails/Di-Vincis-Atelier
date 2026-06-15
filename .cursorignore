@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Build output
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+.vercel/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs and caches
+*.log
+.cache/
+.turbo/
+.parcel-cache/
+
+# Coverage and test artifacts
+coverage/
+.nyc_output/
+
+# OS and editor
+.DS_Store
+Thumbs.db
+
+# Large or generated assets
+*.min.js
+*.min.css
+*.map

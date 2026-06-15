@@ -1,0 +1,12 @@
+---
+description: General coding standards and project conventions
+alwaysApply: true
+---
+
+# General Standards
+
+- Minimize scope: make the smallest correct change
+- Reuse existing abstractions before adding new ones
+- Do not add unrelated features, comments, or refactors
+- Validate inputs and handle errors with clear messages
+- Run relevant lint and test commands before marking work complete

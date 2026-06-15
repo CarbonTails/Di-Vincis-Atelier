@@ -1,0 +1,4 @@
+{
+  "install": "echo 'No install step configured yet'",
+  "start": "echo 'No start command configured yet'"
+}

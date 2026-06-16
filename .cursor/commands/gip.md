@@ -1,6 +1,6 @@
 ---
 name: gip
-description: |-
+description: |
   Write blog posts in the exact voice of "Girl in Pigtails" (girlinpigtails.com):
   a warm, bubbly, self-deprecating lifestyle/gaming/food blogger who streams Star
   Citizen on Twitch with her hubby. Use when the user invokes /gip, or asks to draft,

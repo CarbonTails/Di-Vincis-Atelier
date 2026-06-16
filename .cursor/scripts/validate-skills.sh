@@ -1,70 +1,121 @@
 #!/usr/bin/env bash
-# Validates .cursor/skills/*/SKILL.md frontmatter and layout.
+# Validates .cursor/skills/*/SKILL.md frontmatter, layout, and command wrappers.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 skills_root="${repo_root}/.cursor/skills"
-errors=0
+commands_root="${repo_root}/.cursor/commands"
 
 if [[ ! -d "${skills_root}" ]]; then
   echo "ERROR: missing ${skills_root}" >&2
   exit 1
 fi
 
-while IFS= read -r -d '' skill_file; do
-  skill_dir="$(dirname "${skill_file}")"
-  folder_name="$(basename "${skill_dir}")"
-
-  frontmatter="$(python3 - <<'PY' "${skill_file}"
+python3 - <<'PY' "${skills_root}" "${commands_root}"
 import re
 import sys
 from pathlib import Path
+from typing import Optional
 
-text = Path(sys.argv[1]).read_text(encoding="utf-8")
-match = re.match(r"^---\n(.*?)\n---", text, re.DOTALL)
-if not match:
-    sys.exit(0)
-print(match.group(1), end="")
+skills_root = Path(sys.argv[1])
+commands_root = Path(sys.argv[2])
+errors = 0
+
+FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---", re.DOTALL)
+TOP_LEVEL_FIELD_RE = re.compile(r"^[A-Za-z0-9_-]+:")
+VALID_NAME_RE = re.compile(r"^[a-z0-9-]+$")
+
+
+def error(message: str) -> None:
+    global errors
+    errors += 1
+    print(f"ERROR: {message}", file=sys.stderr)
+
+
+def read_frontmatter(skill_file: Path) -> Optional[str]:
+    text = skill_file.read_text(encoding="utf-8")
+    match = FRONTMATTER_RE.match(text)
+    if not match:
+        return None
+    return match.group(1)
+
+
+def scalar_field(frontmatter: str, field: str) -> Optional[str]:
+    match = re.search(rf"^{re.escape(field)}:\s*(.+)$", frontmatter, re.M)
+    if not match:
+        return None
+    return match.group(1).strip().strip("\"'")
+
+
+def field_block(frontmatter: str, field: str) -> Optional[str]:
+    lines = frontmatter.splitlines()
+    for index, line in enumerate(lines):
+        if not line.startswith(f"{field}:"):
+            continue
+
+        block = [line]
+        value = line.split(":", 1)[1].strip()
+        if value.startswith(("|", ">")):
+            for next_line in lines[index + 1 :]:
+                if next_line and not next_line[0].isspace() and TOP_LEVEL_FIELD_RE.match(next_line):
+                    break
+                block.append(next_line)
+
+        return "\n".join(block)
+
+    return None
+
+
+def expected_command(name: str, description: str) -> str:
+    return f"""---
+name: {name}
+{description}
+---
+
+Read and follow `.cursor/skills/{name}/SKILL.md` completely.
+"""
+
+
+skill_files = sorted(skills_root.glob("*/SKILL.md"))
+for skill_file in skill_files:
+    frontmatter = read_frontmatter(skill_file)
+    if frontmatter is None:
+        error(f"{skill_file} has no YAML frontmatter")
+        continue
+
+    name = scalar_field(frontmatter, "name")
+    description = field_block(frontmatter, "description")
+    folder_name = skill_file.parent.name
+
+    if not name:
+        error(f"{skill_file} is missing required frontmatter field: name")
+        continue
+
+    if name != folder_name:
+        error(f"{skill_file} name '{name}' must match folder '{folder_name}'")
+
+    if not VALID_NAME_RE.match(name):
+        error(f"{skill_file} name '{name}' must be lowercase letters, numbers, and hyphens only")
+
+    if not description:
+        error(f"{skill_file} is missing required frontmatter field: description")
+        continue
+
+    command_file = commands_root / f"{name}.md"
+    if not command_file.exists():
+        error(f"no matching slash command at {command_file}")
+        continue
+
+    actual_command = command_file.read_text(encoding="utf-8")
+    wanted_command = expected_command(name, description)
+    if actual_command != wanted_command:
+        error(f"{command_file} is out of sync with {skill_file}; run .cursor/scripts/sync-skill-commands.sh")
+
+print(f"Validated {len(skill_files)} skill(s) under {skills_root}")
+
+if errors:
+    print(f"{errors} validation error(s)", file=sys.stderr)
+    raise SystemExit(1)
+
+print("All skills valid.")
 PY
-)"
-
-  if [[ -z "${frontmatter}" ]]; then
-    echo "ERROR: ${skill_file} has no YAML frontmatter" >&2
-    errors=$((errors + 1))
-    continue
-  fi
-
-  name="$(printf '%s\n' "${frontmatter}" | awk -F': ' '/^name: / { print $2; exit }' | tr -d '\r' | sed 's/^["'\'']//; s/["'\'']$//')"
-  description="$(printf '%s\n' "${frontmatter}" | awk -F': ' '/^description: / { print substr($0, index($0, ": ") + 2); exit }' | tr -d '\r' | sed 's/^["'\'']//; s/["'\'']$//')"
-
-  if [[ -z "${name}" ]]; then
-    echo "ERROR: ${skill_file} is missing required frontmatter field: name" >&2
-    errors=$((errors + 1))
-  elif [[ "${name}" != "${folder_name}" ]]; then
-    echo "ERROR: ${skill_file} name '${name}' must match folder '${folder_name}'" >&2
-    errors=$((errors + 1))
-  elif ! [[ "${name}" =~ ^[a-z0-9-]+$ ]]; then
-    echo "ERROR: ${skill_file} name '${name}' must be lowercase letters, numbers, and hyphens only" >&2
-    errors=$((errors + 1))
-  fi
-
-  if [[ -z "${description}" ]]; then
-    echo "ERROR: ${skill_file} is missing required frontmatter field: description" >&2
-    errors=$((errors + 1))
-  fi
-
-  command_file="${repo_root}/.cursor/commands/${name}.md"
-  if [[ ! -f "${command_file}" ]]; then
-    echo "WARN: no matching slash command at ${command_file}" >&2
-  fi
-done < <(find "${skills_root}" -mindepth 2 -maxdepth 2 -type f -name 'SKILL.md' -print0 | sort -z)
-
-skill_count="$(find "${skills_root}" -mindepth 2 -maxdepth 2 -type f -name 'SKILL.md' | wc -l | tr -d ' ')"
-echo "Validated ${skill_count} skill(s) under ${skills_root}"
-
-if [[ "${errors}" -gt 0 ]]; then
-  echo "${errors} validation error(s)" >&2
-  exit 1
-fi
-
-echo "All skills valid."

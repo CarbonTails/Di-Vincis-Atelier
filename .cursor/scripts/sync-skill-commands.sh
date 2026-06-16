@@ -9,6 +9,7 @@ commands_root="${repo_root}/.cursor/commands"
 python3 - <<'PY' "${skills_root}" "${commands_root}"
 import re
 import sys
+import json
 from pathlib import Path
 from typing import Optional
 
@@ -35,21 +36,26 @@ def scalar_field(frontmatter: str, field: str) -> Optional[str]:
     return match.group(1).strip().strip("\"'")
 
 
-def field_block(frontmatter: str, field: str) -> Optional[str]:
+def command_description_field(frontmatter: str) -> Optional[str]:
     lines = frontmatter.splitlines()
     for index, line in enumerate(lines):
-        if not line.startswith(f"{field}:"):
+        if not line.startswith("description:"):
             continue
 
-        block = [line]
         value = line.split(":", 1)[1].strip()
         if value.startswith(("|", ">")):
+            block_lines = []
             for next_line in lines[index + 1 :]:
                 if next_line and not next_line[0].isspace() and TOP_LEVEL_FIELD_RE.match(next_line):
                     break
-                block.append(next_line)
+                stripped_line = next_line.strip()
+                if stripped_line:
+                    block_lines.append(stripped_line)
 
-        return "\n".join(block)
+            description = " ".join(block_lines)
+            return f"description: {json.dumps(description, ensure_ascii=False)}"
+
+        return line
 
     return None
 
@@ -57,7 +63,7 @@ def field_block(frontmatter: str, field: str) -> Optional[str]:
 for skill_file in sorted(skills_root.glob("*/SKILL.md")):
     frontmatter = read_frontmatter(skill_file)
     name = scalar_field(frontmatter, "name")
-    description = field_block(frontmatter, "description")
+    description = command_description_field(frontmatter)
     if not name or not description:
         raise SystemExit(f"ERROR: {skill_file} missing name or description")
 

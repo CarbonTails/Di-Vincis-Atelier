@@ -1,6 +1,6 @@
 ---
 name: gip
-description: "Write blog posts in the Girl in Pigtails voice for girlinpigtails.com. Warm, bubbly lifestyle and gaming blogger who streams Star Citizen on Twitch with her hubby. Use when the user invokes /gip, or asks to draft, ghostwrite, or rewrite a post as Girl in Pigtails, in my GiP voice, or for the girlinpigtails blog. Do NOT use for templated giveaway, stream-schedule, or patch-note posts."
+description: "Write blog posts in the Girl in Pigtails voice. Alias for the girl-in-pigtails skill. Use when the user invokes /gip or asks to write as Girl in Pigtails or GiP."
 ---
 
 Read and follow `.cursor/skills/gip/SKILL.md` completely.

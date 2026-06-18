@@ -130,6 +130,12 @@ for skill_file in skill_files:
 
 print(f"Validated {len(skill_files)} skill(s) under {skills_root}")
 
+if len(skill_files) > 31:
+    error(
+        "Cloud slash menus appear to cap repo skills at 31; "
+        f"found {len(skill_files)} skills. Remove or merge a skill before adding another."
+    )
+
 if errors:
     print(f"{errors} validation error(s)", file=sys.stderr)
     raise SystemExit(1)

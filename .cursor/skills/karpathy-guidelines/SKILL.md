@@ -1,15 +1,12 @@
 ---
 name: karpathy-guidelines
-description: >
-  Behavioral guidelines to reduce common LLM coding mistakes. Use when writing,
-  reviewing, or refactoring code to avoid overcomplication, make surgical
-  changes, surface assumptions, and define verifiable success criteria, or
-  when the user invokes /karpathy-guidelines.
+description: Behavioral guidelines to reduce common LLM coding mistakes. Use when writing, reviewing, or refactoring code, or when the user invokes /karpathy-guidelines or /karpathy.
+disable-model-invocation: true
 ---
 
 # Karpathy Guidelines
 
-Behavioral guidelines to reduce common LLM coding mistakes, derived from [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) on LLM coding pitfalls.
+Behavioral guidelines to reduce common LLM coding mistakes, derived from Andrej Karpathy's observations on LLM coding pitfalls.
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 

@@ -36,7 +36,7 @@ def scalar_field(frontmatter: str, field: str) -> Optional[str]:
     return match.group(1).strip().strip("\"'")
 
 
-def command_description_field(frontmatter: str) -> Optional[str]:
+def description_text(frontmatter: str) -> Optional[str]:
     lines = frontmatter.splitlines()
     for index, line in enumerate(lines):
         if not line.startswith("description:"):
@@ -52,12 +52,23 @@ def command_description_field(frontmatter: str) -> Optional[str]:
                 if stripped_line:
                     block_lines.append(stripped_line)
 
-            description = " ".join(block_lines)
-            return f"description: {json.dumps(description, ensure_ascii=False)}"
+            return " ".join(block_lines)
 
-        return line
+        if value.startswith(('"', "'")):
+            import yaml
+
+            return yaml.safe_load(value)
+
+        return value
 
     return None
+
+
+def command_description_field(frontmatter: str) -> Optional[str]:
+    description = description_text(frontmatter)
+    if description is None:
+        return None
+    return f"description: {json.dumps(description, ensure_ascii=False)}"
 
 
 for skill_file in sorted(skills_root.glob("*/SKILL.md")):
